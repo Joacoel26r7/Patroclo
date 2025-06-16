@@ -183,6 +183,10 @@ cython_debug/
 # Ruff stuff:
 .ruff_cache/
 
+# Streamlit
+.streamlit/secrets.toml
+
+
 # PyPI configuration file
 .pypirc
 
