@@ -3,6 +3,14 @@ import groq
 import re
 from datetime import datetime
 
+#ELIMINAR DB MOMENTANEAMENTE
+import os
+
+if os.path.exists("chat_history.db"):
+    os.remove("chat_history.db")
+
+
+
 # PAGE CONFIG
 st.set_page_config(
     page_title="Patroclo",
