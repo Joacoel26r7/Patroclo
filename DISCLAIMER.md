@@ -39,3 +39,6 @@ Contact
 For inquiries or reports regarding this legal notice, please contact the developer through repository-provided channels.
 
 Last Updated: June 2025
+
+## Developer Information
+Patroclo was developed by Frederick Joaquin Riedel Padilla, a high school student. This is a personal project not affiliated with any educational institution.

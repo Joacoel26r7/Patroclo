@@ -99,3 +99,16 @@ Patroclo is a digital assistant designed for emotional support. It focuses on ac
 
 Last Updated
 June 2025
+
+## About the Developer
+
+Patroclo was created by **Frederick Joaquin Riedel Padilla**, a high school student passionate about mental health technology. This independent research project combines:
+
+- Self-directed study in conversational AI
+- Psychology fundamentals
+- Open-source development
+
+**Contact**:  
+📧 [JoaquinRiedel34@gmail.com](mailto:JoaquinRiedel34@gmail.com)  
+
+*Note: This is a personal educational project, not affiliated with any institution.*
