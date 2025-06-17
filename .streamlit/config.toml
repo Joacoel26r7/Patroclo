@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#FDD835"               # Amarillo pato, más suave
+backgroundColor = "#FCF8E3"            # Beige claro, menos brillo que blanco puro
+secondaryBackgroundColor = "#FFF9C4"   # Amarillo pastel (igual que el tuyo)
+textColor = "#4E342E"                  # Marrón oscuro, mejor contraste y más cálido
+font = "sans serif"
