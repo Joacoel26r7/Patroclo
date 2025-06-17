@@ -198,3 +198,4 @@ cython_debug/
 .cursorindexingignore
 
 db.py
+patroclo_chat.db
