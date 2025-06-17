@@ -1,6 +1,5 @@
 import streamlit as st
 import groq
-import sqlite3
 import re
 from datetime import datetime
 
@@ -11,92 +10,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# BASE DE DATOS
-DB_PATH = "patroclo_chat.db"
-
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS chats (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            created_at TEXT NOT NULL
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            chat_id INTEGER,
-            role TEXT,
-            content TEXT,
-            timestamp TEXT,
-            FOREIGN KEY(chat_id) REFERENCES chats(id)
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS user_consent (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            accepted_at TEXT NOT NULL,
-            ip_address TEXT,
-            user_agent TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-init_db()
-
-# FUNCIONES BASE DE DATOS
-def get_all_chats():
-    with sqlite3.connect(DB_PATH) as conn:
-        return conn.execute("SELECT id, name FROM chats ORDER BY created_at DESC").fetchall()
-
-def get_chat_id_by_name(name):
-    with sqlite3.connect(DB_PATH) as conn:
-        result = conn.execute("SELECT id FROM chats WHERE name = ?", (name,)).fetchone()
-        return result[0] if result else None
-
-def create_chat(name="Nuevo chat"):
-    now = datetime.now().isoformat()
-    with sqlite3.connect(DB_PATH) as conn:
-        try:
-            cur = conn.cursor()
-            cur.execute("INSERT INTO chats (name, created_at) VALUES (?, ?)", (name, now))
-            conn.commit()
-            return cur.lastrowid
-        except sqlite3.IntegrityError:
-            return get_chat_id_by_name(name)
-
-def delete_chat(chat_id):
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("DELETE FROM messages WHERE chat_id = ?", (chat_id,))
-        conn.execute("DELETE FROM chats WHERE id = ?", (chat_id,))
-        conn.commit()
-
-def save_message_to_db(chat_id, role, content):
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("""
-            INSERT INTO messages (chat_id, role, content, timestamp)
-            VALUES (?, ?, ?, ?)
-        """, (chat_id, role, content, datetime.now().isoformat()))
-        conn.commit()
-
-def load_messages(chat_id):
-    with sqlite3.connect(DB_PATH) as conn:
-        result = conn.execute("""
-            SELECT role, content FROM messages WHERE chat_id = ? ORDER BY timestamp
-        """, (chat_id,)).fetchall()
-        return [{"role": r, "content": c} for r, c in result]
-
-def record_consent():
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("""
-            INSERT INTO user_consent (accepted_at, ip_address, user_agent)
-            VALUES (?, ?, ?)
-        """, (datetime.now().isoformat(), "127.0.0.1", "Streamlit"))
-        conn.commit()
 
 # Inicializar estados globales
 if "theme_selected" not in st.session_state:
@@ -112,14 +25,8 @@ if "language_notice_shown" not in st.session_state:
 
 # Manejo de múltiples chats
 if "chats" not in st.session_state:
-    existing_chats = get_all_chats()
-    if existing_chats:
-        st.session_state.chats = {name: load_messages(chat_id) for chat_id, name in existing_chats}
-        st.session_state.current_chat = existing_chats[0][1]
-    else:
-        chat_id = create_chat("Chat principal")
-        st.session_state.chats = {"Chat principal": []}
-        st.session_state.current_chat = "Chat principal"
+    st.session_state.chats = {"Chat principal": []}
+    st.session_state.current_chat = "Chat principal"
 
 if "current_chat" not in st.session_state:
     st.session_state.current_chat = next(iter(st.session_state.chats.keys()))
@@ -132,7 +39,6 @@ DIMINUTIVOS = {
     "nico": "nicolas", "fer": "fernando", "ro": "roberto", "fran": "francisco",
     "ale": "alejandro", "pato": "patricia", "nacho": "ignacio", "meli": "melina",
     "pame": "pamela"
-    
 }
 
 FEMENINOS = {"maria", "sofia", "ana", "carla", "laura", "julieta", "valeria", "camila",
@@ -196,14 +102,9 @@ with st.sidebar:
         st.success(f"Perfecto, ahora te llamo {st.session_state.user_name}.")
 
     st.markdown("### Chats")
-    db_chats = {name: chat_id for chat_id, name in get_all_chats()}
-    
-    for name in db_chats:
-        if name not in st.session_state.chats:
-            st.session_state.chats[name] = load_messages(db_chats[name])
     
     for name in list(st.session_state.chats.keys()):
-        if name not in db_chats and name != "Chat principal":
+        if name not in st.session_state.chats and name != "Chat principal":
             del st.session_state.chats[name]
             if st.session_state.current_chat == name:
                 st.session_state.current_chat = "Chat principal"
@@ -225,7 +126,6 @@ with st.sidebar:
         if submitted and new_chat_name.strip():
             name = new_chat_name.strip()
             if name not in st.session_state.chats:
-                chat_id = create_chat(name)
                 st.session_state.chats[name] = []
                 st.session_state.current_chat = name
                 st.rerun()
@@ -234,9 +134,6 @@ with st.sidebar:
 
     if st.session_state.current_chat != "Chat principal":
         if st.button(f"🗑️ Borrar '{st.session_state.current_chat}'"):
-            chat_id = get_chat_id_by_name(st.session_state.current_chat)
-            if chat_id:
-                delete_chat(chat_id)
             del st.session_state.chats[st.session_state.current_chat]
             st.session_state.current_chat = "Chat principal"
             st.rerun()
@@ -246,7 +143,7 @@ st.title("Patroclo 🐣 (BETA)")
 
 # Mostrar cartel informativo una sola vez
 if not st.session_state.language_notice_shown:
-    st.write("🌍 If another language feels more comfortable, you can just say something like 'I speak English' at the start — I’ll adapt to you.") 
+    st.write("🌍 If another language feels more comfortable, you can just say something like 'I speak English' at the start — I'll adapt to you.") 
     st.session_state.language_notice_shown = True
 
 # Cliente groq
@@ -388,10 +285,6 @@ def display_chat_history():
 # Guardar mensaje
 def save_message(role, content):
     st.session_state.chats[st.session_state.current_chat].append({"role": role, "content": content})
-    chat_id = get_chat_id_by_name(st.session_state.current_chat)
-    if not chat_id:
-        chat_id = create_chat(st.session_state.current_chat)
-    save_message_to_db(chat_id, role, content)
 
 # Obtener respuesta
 def obtain_model_answer(client, model, user_message):
